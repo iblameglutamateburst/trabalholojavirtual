@@ -1,5 +1,5 @@
 # trabalholojavirtual
-# Trabalho PHP - Biblioteca digital
+# Trabalho - Biblioteca digital
 
 ## Integrantes
 - Camily: Scrum Master
