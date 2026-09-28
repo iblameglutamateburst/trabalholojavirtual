@@ -1,133 +1,110 @@
 <?php
 session_start();
+require "conexao.php";
 
-require_once "conexao.php";
+$destaques = $conexao->query("SELECT l.isbn, l.titulo, l.custo, l.foto, l.categoria, a.nome_autor
+                              FROM livros l
+                              LEFT JOIN autores a ON a.autoria = l.isbn
+                              ORDER BY l.isbn DESC
+                              LIMIT 4");
 
-$pesquisa = "";
+$categorias = $conexao->query("SELECT nome FROM categorias ORDER BY nome LIMIT 6");
 
-if (isset($_GET["pesquisa"])) {
-    $pesquisa = trim($_GET["pesquisa"]);
-}
-
-if ($pesquisa != "") {
-
-    $sql = "SELECT l.isbn, l.titulo, l.edição, l.custo, e.nome AS editora
-            FROM livros l
-            LEFT JOIN editora e ON e.publicacao = l.isbn
-            WHERE l.titulo LIKE ?
-            ORDER BY l.titulo";
-    $stmt = $conexao->prepare($sql);
-    $termo = "%" . $pesquisa . "%";
-    $stmt->bind_param("s", $termo);
-    $stmt->execute();
-
-    $resultado = $stmt->get_result();
-} else {
-    $sql = "SELECT l.isbn, l.titulo, l.edição, l.custo, e.nome AS editora
-            FROM livros l
-            LEFT JOIN editora e ON e.publicacao = l.isbn
-            ORDER BY l.titulo";
-    $resultado = $conexao->query($sql);
-}
+$total_livros = $conexao->query("SELECT COUNT(*) AS total FROM livros")->fetch_assoc()["total"];
 ?>
-
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreams Books - Catálogo</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dreams Books - Sua livraria online</title>
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <header>
-        <h1>Dreams Books</h1>
-        <nav>
-            <a href="index.php">Início</a>
+
+<?php include "header.php"; ?>
+
+<main>
+
+<div class="hero">
+    <div class="hero-texto">
+        <span class="hero-selo">📚 Livraria online</span>
+        <h1>Toda boa história começa aqui.</h1>
+        <p>Descubra seu próximo livro favorito no catálogo da Dreams Books.</p>
+        <div class="hero-botoes">
+            <a href="catalogo.php" class="hero-botao">Explorar catálogo</a>
             <?php if (isset($_SESSION["id"])): ?>
-                <a href="conta.php">Minha conta</a>
-                <?php if ($_SESSION["admin"] == 1): ?>
-                    <a href="admin.php">Área admin</a>
-                <?php endif; ?>
-                <a href="logout.php">Sair</a>
+                <a href="conta.php" class="hero-botao hero-botao-claro">Minha conta</a>
             <?php else: ?>
-                <a href="login.php">Entrar</a>
+                <a href="cadastro.php" class="hero-botao hero-botao-claro">Criar conta grátis</a>
             <?php endif; ?>
-        </nav>
-    </header>
+        </div>
+        <p class="hero-info"><?= $total_livros ?> livro(s) disponíveis no acervo</p>
+    </div>
+    <div class="hero-visual" aria-hidden="true">📖</div>
+</div>
 
-    <main>
-        <h2>Pesquisar livros</h2>
-        <form method="GET" class="pesquisa">
-            <input
-                type="text"
-                name="pesquisa"
-                placeholder="Digite o título do livro..."
-                value="<?= htmlspecialchars($pesquisa) ?>"
-            >
-            <button type="submit">
-                Pesquisar
-            </button>
-        </form>
+<?php if ($categorias->num_rows > 0): ?>
+<div class="chips-inicio">
+    <?php while ($cat = $categorias->fetch_assoc()): ?>
+        <a href="catalogo.php?categoria=<?= urlencode($cat["nome"]) ?>" class="chip-categoria chip-grande">
+            <?= htmlspecialchars($cat["nome"]) ?>
+        </a>
+    <?php endwhile; ?>
+</div>
+<?php endif; ?>
 
+<?php if ($destaques->num_rows > 0): ?>
+<div class="secao-inicio">
+    <div class="secao-topo">
+        <h2>Novidades no acervo</h2>
+        <a href="catalogo.php" class="link-mais">Ver todos →</a>
+    </div>
 
-        <?php if ($pesquisa != ""): ?>
-            <h2>
-                Resultados para:
-                <strong><?= htmlspecialchars($pesquisa) ?></strong>
-            </h2>
-        <?php else: ?>
-            <h2>Todos os livros</h2>
-        <?php endif; ?>
-
-
-        <?php if ($resultado->num_rows > 0): ?>
-            <div class="livros">
-                <?php while ($livro = $resultado->fetch_assoc()): ?>
-                    <div class="livro">
-                        <div class="livro-imagem">
-                            📚
-                        </div>
-
-                        <h3>
-                            <?= htmlspecialchars($livro["titulo"]) ?>
-                        </h3>
-
-                        <p class="detalhe">
-                            Editora:
-                            <?= $livro["editora"] != "" ? htmlspecialchars($livro["editora"]) : "Não informada" ?>
-                        </p>
-
-                        <p class="detalhe">
-                            Edição: <?= htmlspecialchars($livro["edição"]) ?>
-                        </p>
-
-                        <p class="preco">
-                            R$
-                            <?= number_format($livro["custo"], 2, ",", ".") ?>
-                        </p>
-
-                        <form action="comprar.php" method="GET">
-                            <input
-                                type="hidden"
-                                name="isbn"
-                                value="<?= $livro["isbn"] ?>"
-                            >
-                            <button type="submit">
-                                Comprar
-                            </button>
-                        </form>
-                    </div>
-                <?php endwhile; ?>
+    <div class="livros">
+        <?php while ($livro = $destaques->fetch_assoc()): ?>
+            <div class="livro">
+                <?php if (!empty($livro["foto"]) && file_exists($livro["foto"])): ?>
+                    <img src="<?= $livro["foto"] ?>" class="livro-foto">
+                <?php else: ?>
+                    <div class="livro-imagem">📕</div>
+                <?php endif; ?>
+                <?php if (!empty($livro["categoria"])): ?>
+                    <span class="chip-categoria"><?= htmlspecialchars($livro["categoria"]) ?></span>
+                <?php endif; ?>
+                <h3><?= htmlspecialchars($livro["titulo"]) ?></h3>
+                <p class="detalhe"><?= htmlspecialchars($livro["nome_autor"] ?? "Autor desconhecido") ?></p>
+                <p class="preco">R$ <?= number_format($livro["custo"], 2, ",", ".") ?></p>
+                <a href="livro.php?isbn=<?= $livro["isbn"] ?>"><button type="button">Ver livro</button></a>
             </div>
-        <?php else: ?>
-            <div class="nenhum">
-                <p>
-                    Nenhum livro encontrado.
-                </p>
-            </div>
-        <?php endif; ?>
-    </main>
+        <?php endwhile; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<div class="vantagens">
+    <div class="vantagem">
+        <span class="vantagem-icone">🚚</span>
+        <h3>Entrega rápida</h3>
+        <p>Seu pedido chega em dias, não em semanas.</p>
+    </div>
+    <div class="vantagem">
+        <span class="vantagem-icone">🔒</span>
+        <h3>Compra segura</h3>
+        <p>Seus dados protegidos do início ao fim.</p>
+    </div>
+    <div class="vantagem">
+        <span class="vantagem-icone">⭐</span>
+        <h3>Acervo curado</h3>
+        <p>Livros selecionados com cuidado pra você.</p>
+    </div>
+</div>
+
+</main>
+
+<footer class="rodape-site">
+    <p>📚 Dreams Books — <?= date("Y") ?>. Feito para quem ama histórias.</p>
+</footer>
+
 </body>
 </html>

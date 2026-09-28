@@ -59,19 +59,25 @@ $conexao->close();
             <h1>Entrar na sua conta</h1>
             <form method="POST">
                 <label>E-mail</label>
-                <input type="email" name="email" placeholder="Seu@gmail.com" required>
-
-                <label>Senha</label>
-                <input type="password" name="senha" placeholder="Digite sua senha" required>
-
-                <div class="opcoes">
-                    <input type="checkbox" name="lembrar">
-                    Lembrar de mim
+                <div class="campo">
+                    <span class="icone">👤</span>
+                    <input type="email" name="email" placeholder="Seu@gmail.com" required>
                 </div>
 
-                <button type="submit">
-                    Entrar
-                </button>
+                <label>Senha</label>
+                <div class="campo">
+                    <span class="icone">🔒</span>
+                    <input type="password" name="senha" placeholder="Digite sua senha" required>
+                </div>
+
+                <div class="opcoes">
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:400;margin-top:0;">
+                        <input type="checkbox" name="lembrar"> Lembrar de mim
+                    </label>
+                    <a href="#">Esqueceu sua senha?</a>
+                </div>
+
+                <button type="submit">Entrar</button>
             </form>
 
             <?php if ($mensagem != ""): ?>
@@ -79,6 +85,11 @@ $conexao->close();
                     <?= $mensagem ?>
                 </div>
             <?php endif; ?>
+
+            <div class="divisor">ou</div>
+
+            <button type="button" class="botao-google">🔵 Entrar com Google</button>
+
             <div class="rodape">
                 Não tem uma conta? <a href="cadastro.php">Cadastre-se</a>
             </div>
